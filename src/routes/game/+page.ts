@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 interface BoardItem {
   value: string;
   marked: boolean;
+  uuid: string;
 }
 
 type Board = Array<Array<BoardItem>>

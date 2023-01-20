@@ -3,10 +3,10 @@
     windows_subsystem = "windows"
 )]
 
-use std::sync::Mutex;
-
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
+use std::sync::Mutex;
+use uuid::Uuid;
 
 const NUM_OF_LETTERS: u8 = 8;
 const BOARD_SIZE: u8 = NUM_OF_LETTERS * 2;
@@ -22,12 +22,12 @@ struct MemoryGame {
 struct BoardItem {
     value: char,
     marked: bool,
+    uuid: String,
 }
 
 #[tauri::command]
 fn init_game(state: tauri::State<'_, MemoryGame>) -> Vec<char> {
     let mut letters: Vec<char> = std::vec![];
-    let mut board: Vec<Vec<BoardItem>> = std::vec![];
     let mut temp_board: Vec<BoardItem> = std::vec![];
 
     // Create letters to be on game
@@ -53,10 +53,12 @@ fn init_game(state: tauri::State<'_, MemoryGame>) -> Vec<char> {
         temp_board.push(BoardItem {
             value: letter,
             marked: false,
+            uuid: Uuid::new_v4().to_string(),
         });
         temp_board.push(BoardItem {
             value: letter,
             marked: false,
+            uuid: Uuid::new_v4().to_string(),
         });
     }
     temp_board.shuffle(&mut rand::thread_rng());
@@ -89,10 +91,42 @@ fn get_board(state: tauri::State<MemoryGame>) -> Vec<Vec<BoardItem>> {
     return board;
 }
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn guess(guess1: &str, guess2: &str, state: tauri::State<MemoryGame>) -> bool {
+    let mut value1: Option<char> = None;
+    let mut value2: Option<char> = None;
+
+    for board_row in state.board.lock().unwrap().iter() {
+        for cell in board_row.iter() {
+            if value1.is_some() && value2.is_some() {
+                break;
+            }
+
+            if guess1 == cell.uuid {
+                value1 = Some(cell.value);
+            }
+
+            if guess2 == cell.uuid {
+                value2 = Some(cell.value)
+            }
+        }
+    }
+
+    println!("Guess 1: {:?} | Guess 2: {:?}", value1, value2);
+
+    // for board_row in state.board.lock().unwrap().iter() {
+    //     for cell in board_row.iter() {
+    //         if guess1 == cell.uuid {
+    //             value1 = Some(cell.value);
+    //         }
+
+    //         if guess2 == cell.uuid {
+    //             value2 = Some(cell.value)
+    //         }
+    //     }
+    // }
+
+    return value1.unwrap() == value2.unwrap();
 }
 
 fn main() {
@@ -102,10 +136,10 @@ fn main() {
             board: Mutex::new(std::vec![]),
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             init_game,
             get_letters,
-            get_board
+            get_board,
+            guess
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
