@@ -6,7 +6,7 @@ interface BoardItem {
   uuid: string;
 }
 
-type Board = Array<Array<BoardItem>>
+export type Board = Array<Array<BoardItem>>
 
 export async function load() {
   const letters: string[] = await invoke("init_game");

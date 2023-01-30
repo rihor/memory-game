@@ -2,24 +2,38 @@
   import Timer from "$lib/Timer.svelte";
   import { invoke } from "@tauri-apps/api/tauri";
   import type { PageData } from "./$types";
+  import type { Board } from "./+page";
 
   export let data: PageData;
 
   let letters = data.letters;
-  let board = data.board;
+  $: board = data.board;
   let selection1Id: null | string = null;
   let selection2Id: null | string = null;
   let isBeginning = true;
+  let showSelected = false;
 
   $: if (selection1Id && selection2Id) {
-    setTimeout(() => {
-      if (selection1Id && selection2Id) {
-        checkGuess(selection1Id, selection2Id);
-      }
-    }, 250);
+    showSelected = true;
+
+    if (selection1Id && selection2Id) {
+      checkGuess(selection1Id, selection2Id).then((newBoard) => {
+        setTimeout(() => {
+          showSelected = false;
+          selection1Id = null;
+          selection2Id = null;
+          board = newBoard;
+        }, 1250);
+      });
+    }
   }
 
   function selectCell(rowIndex: number, colIndex: number) {
+    // Block selection spam
+    if (showSelected || isBeginning) {
+      return;
+    }
+
     const id = board[rowIndex][colIndex]?.uuid;
 
     if (selection1Id) {
@@ -31,9 +45,7 @@
   }
 
   async function checkGuess(id1: string, id2: string) {
-    const guessResponse = await invoke("guess", { guess1: id1, guess2: id2 });
-    selection1Id = null;
-    selection2Id = null;
+    return await invoke<Board>("guess", { id1, id2 });
   }
 
   function onTimeEnd() {
@@ -41,43 +53,41 @@
   }
 </script>
 
-<div class="w-full h-full gap-10 flex flex-col items-center justify-center p-6">
-  <header class="flex gap-4 items-center">
-    <a
-      href="/"
-      class="text-2xl flex hover:opacity-70 transition-all font-medium text-blue-600"
-      >&#8592</a
-    >
-
-    <h1 class="text-blue-600 font-bold text-2xl">Letters in game</h1>
-
-    <div class="flex gap-2">
-      {#each letters as letter}
-        <span
-          class="text-lg bg-slate-400 rounded-md py-2 p-4 text-blue-100 font-bold"
-          >{letter}</span
-        >
-      {/each}
+<div class="w-full h-full gap-2 flex flex-col items-center justify-center p-6">
+  <header class="w-full flex flex-col gap-12 items-center">
+    <div class="w-full flex items-center gap-4">
+      <a
+        href="/"
+        class="text-xl flex hover:opacity-70 transition-all font-medium text-emerald-100 gap-4"
+        >&#8592 <span>Menu</span></a
+      >
     </div>
+
+    {#if isBeginning}
+      <Timer on:timeend={onTimeEnd} />
+    {/if}
   </header>
 
-  <Timer on:timeend={onTimeEnd} />
-
-  <div class="flex flex-col gap-4 w-full h-full m-auto items-center">
+  <div
+    class="flex flex-col gap-4 w-full h-full m-auto items-center justify-center"
+  >
     {#each board as row, rowIndex}
       <div class="flex items-center justify-center gap-4">
         {#each row as col, colIndex}
           {@const isSelected =
             col.uuid === selection1Id || col.uuid === selection2Id}
           <div
-            class="flex place-content-center w-12 text-2xl py-4 px-8 bg-blue-400 font-bold text-white rounded-md hover:bg-blue-500 cursor-pointer transition-all duration-150"
+            class={`flex place-content-center w-12 text-2xl py-4 px-8 ${
+              isSelected ? "scale-110" : "scale-100"
+            } ${
+              col.marked
+                ? "bg-purple-400 hover:bg-purple-500"
+                : "bg-purple-200 hover:bg-purple-300 text-purple-800"
+            } outline-4 font-bold text-white rounded-md  cursor-pointer transition-all duration-150`}
             on:click={() => selectCell(rowIndex, colIndex)}
             on:keypress={() => selectCell(rowIndex, colIndex)}
-            style:outline={isSelected
-              ? "2px solid red"
-              : "2px solid transparent"}
           >
-            {#if isBeginning || col.marked}
+            {#if isBeginning || col.marked || (showSelected && isSelected)}
               {col.value}
             {:else}
               ?

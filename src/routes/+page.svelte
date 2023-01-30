@@ -2,9 +2,11 @@
   import Greet from "$lib/Greet.svelte";
 </script>
 
-<h1 class="text-2xl text-blue-700 font-bold">Memory Game</h1>
+<h1 class="text-4xl text-purple-100 font-bold">Memory Game</h1>
+
+<br />
 
 <a
-  class="bg-blue-400 py-2 px-8 rounded-md text-white font-semibold z-10"
+  class="bg-purple-100 text-purple-500 py-2 px-8 rounded-md font-semibold z-10 hover:scale-110 transition-all"
   href="/game">START</a
 >

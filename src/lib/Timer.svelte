@@ -2,7 +2,7 @@
   import { tweened } from "svelte/motion";
   import { createEventDispatcher } from "svelte";
 
-  export let originalTime = 10;
+  export let originalTime = 2;
 
   const dispatch = createEventDispatcher();
   let timer = tweened(originalTime);

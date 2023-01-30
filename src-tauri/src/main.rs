@@ -86,15 +86,17 @@ fn get_board(state: tauri::State<MemoryGame>) -> Vec<Vec<BoardItem>> {
         board.push(item.to_vec())
     }
 
-    println!("{:?}", board);
-
     return board;
 }
 
 #[tauri::command]
-fn guess(guess1: &str, guess2: &str, state: tauri::State<MemoryGame>) -> bool {
+fn guess(id1: &str, id2: &str, state: tauri::State<MemoryGame>) -> Vec<Vec<BoardItem>> {
     let mut value1: Option<char> = None;
     let mut value2: Option<char> = None;
+
+    if id1 == id2 {
+        return (*state.board.lock().unwrap()).to_vec();
+    }
 
     for board_row in state.board.lock().unwrap().iter() {
         for cell in board_row.iter() {
@@ -102,31 +104,29 @@ fn guess(guess1: &str, guess2: &str, state: tauri::State<MemoryGame>) -> bool {
                 break;
             }
 
-            if guess1 == cell.uuid {
+            if id1 == cell.uuid {
                 value1 = Some(cell.value);
             }
 
-            if guess2 == cell.uuid {
+            if id2 == cell.uuid {
                 value2 = Some(cell.value)
             }
         }
     }
 
-    println!("Guess 1: {:?} | Guess 2: {:?}", value1, value2);
+    let is_correct = value1.unwrap() == value2.unwrap();
 
-    // for board_row in state.board.lock().unwrap().iter() {
-    //     for cell in board_row.iter() {
-    //         if guess1 == cell.uuid {
-    //             value1 = Some(cell.value);
-    //         }
+    if is_correct {
+        for board_row in state.board.lock().unwrap().iter_mut() {
+            for cell in board_row.iter_mut() {
+                if id1 == cell.uuid || id2 == cell.uuid {
+                    cell.marked = true;
+                }
+            }
+        }
+    }
 
-    //         if guess2 == cell.uuid {
-    //             value2 = Some(cell.value)
-    //         }
-    //     }
-    // }
-
-    return value1.unwrap() == value2.unwrap();
+    return (*state.board.lock().unwrap()).to_vec();
 }
 
 fn main() {
