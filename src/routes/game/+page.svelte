@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Confetti from "$lib/Confetti.svelte";
   import Timer from "$lib/Timer.svelte";
   import { invoke } from "@tauri-apps/api/tauri";
   import type { PageData } from "./$types";
@@ -6,12 +7,13 @@
 
   export let data: PageData;
 
-  let letters = data.letters;
-  $: board = data.board;
   let selection1Id: null | string = null;
   let selection2Id: null | string = null;
   let isBeginning = true;
   let showSelected = false;
+
+  $: board = data.board;
+  $: hasWon = board.flat().every((cell) => cell.marked);
 
   $: if (selection1Id && selection2Id) {
     showSelected = true;
@@ -34,14 +36,19 @@
       return;
     }
 
-    const id = board[rowIndex][colIndex]?.uuid;
+    const cell = board[rowIndex][colIndex];
 
-    if (selection1Id) {
-      selection2Id = id;
+    // Must not select a cell that was already solved
+    if (cell.marked) {
       return;
     }
 
-    selection1Id = id;
+    if (selection1Id) {
+      selection2Id = cell.uuid;
+      return;
+    }
+
+    selection1Id = cell.uuid;
   }
 
   async function checkGuess(id1: string, id2: string) {
@@ -54,6 +61,8 @@
 </script>
 
 <div class="w-full h-full gap-2 flex flex-col items-center justify-center p-6">
+  <Confetti shouldPlay={hasWon} />
+
   <header class="w-full flex flex-col gap-12 items-center">
     <div class="w-full flex items-center gap-4">
       <a
@@ -65,6 +74,10 @@
 
     {#if isBeginning}
       <Timer on:timeend={onTimeEnd} />
+    {/if}
+
+    {#if hasWon}
+      <h1 class="text-5xl text-emerald-50 font-bold">YOU WON!</h1>
     {/if}
   </header>
 

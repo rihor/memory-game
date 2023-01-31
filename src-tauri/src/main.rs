@@ -61,7 +61,9 @@ fn init_game(state: tauri::State<'_, MemoryGame>) -> Vec<char> {
             uuid: Uuid::new_v4().to_string(),
         });
     }
+
     temp_board.shuffle(&mut rand::thread_rng());
+
     let chunked: Vec<Vec<BoardItem>> = temp_board
         .chunks(NUM_OF_COLUMNS as usize)
         .map(|x| x.to_vec())
